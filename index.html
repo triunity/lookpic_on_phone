@@ -1,0 +1,278 @@
+<!doctype html>
+<html>
+	<head>
+		<meta http-equiv="content-Type" content="text/html; charset=utf-8" />
+		<meta name="viewpoint" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+		<!-- 不识别手机号 -->
+		<mete name="format-detection" content="telephone=no" />
+		<!-- 不识别邮箱 -->
+		<meta name="format-detection" content="email=no" />
+
+		<!-- 针对苹果设备 -->
+		<!-- 全屏应用 -->
+		<meta name="apple-touch-fullscreen" content="YES" />
+		<!-- 删除默认苹果工具栏和菜单栏 -->
+		<meta name="apple-mobile-web-app-capable" content="YES" />
+		<!-- 定义状态条颜色 -->
+		<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+
+		<style type="text/css">
+		body{
+			margin: 0;
+			padding: 0;
+			background: #333;
+			overflow: hidden;
+
+			/*非常耗费内存*/
+			/*height: 100%;
+			position: absolute;*/
+		}
+		#canvas{
+			height: 100%;
+			width: 100%;
+			overflow: hidden;
+		}
+
+		ul, li{
+			list-style: none;
+			padding: 0;
+			margin: 0;
+			overflow: hidden;
+
+			height: 100%;
+			width: 100%;
+		}
+
+		/*内容居中的三种方法*/
+		/*1、浏览器hack*/
+		/*li{
+			line-height: 568px;
+			vertical-align: middle;
+		}
+		li img{
+			vertical-align: middle;
+		}*/
+
+		/*2、设置盒子模型*/
+		/*li{
+			display: table-cell;
+			vertical-align: middle;
+		}*/
+
+		/*3、*/
+		li{
+			display: -webkit-box;
+			-webkit-box-pack: center;
+			-webkit-box-align: center;
+			-webkit-backface-visibility: hidden;
+		}
+
+		li{
+			position: absolute;
+		}
+		li img{
+			max-width: 100%;
+			max-height: 100%;
+		}
+		</style>
+	</head>
+	<body>
+		<!-- 外层画布 -->
+		<div id="canvas"></div>
+		<script type="text/javascript">
+		// 图片数据
+		var LIST = [{
+			height: 478,
+			width: 600,
+			img: 'pic/1.jpg'
+		}, {
+			height: 1179,
+			width: 800,
+			img: 'pic/2.jpg'
+		}, {
+			height: 304,
+			width: 600,
+			img: 'pic/3.jpg'
+		}, {
+			height: 307,
+			width: 600,
+			img: 'pic/4.jpg'
+		}, {
+			height: 817,
+			width: 600,
+			img: 'pic/5.jpg'
+		}, {
+			height: 334,
+			width: 600,
+			img: 'pic/6.jpg'
+		}, {
+			height: 388,
+			width: 600,
+			img: 'pic/7.jpg'
+		}, {
+			height: 400,
+			width: 600,
+			img: 'pic/8.jpg'
+		}, {
+			height: 400,
+			width: 600,
+			img: 'pic/9.jpg'
+		}];
+
+		function Slider(opts) {
+			this.wrap = opts.dom;
+			this.list = opts.list;
+
+			// 构造三部曲
+			this.init();
+			this.renderDOM();
+			this.bindDOM();
+		};
+
+		Slider.prototype.init = function () {
+			// 计算窗口长宽比
+			this.radio = window.innerHeight / window.innerWidth;
+
+			this.scaleW = window.innerWidth;
+
+			// 当前图片索引
+			this.idx = 0;
+		};
+
+		Slider.prototype.renderDOM = function () {
+			var wrap = this.wrap;
+			var data = this.list;
+			var len = data.length;
+			var scale = this.scaleW;
+
+			this.outer = document.createElement('ul');
+			for(var i = 0; i < len; i++) {
+				var li = document.createElement('li');
+				var item = data[i];
+
+				if (item) {
+					if (item['height'] / item['width'] > this.radio) {
+						li.innerHTML = '<img height="' + window.innerHeight + '" src="' + item['img'] + '" />';
+					} else {
+						li.innerHTML = '<img width="' + window.innerWidth + '" src="' + item['img'] + '" />';
+					};
+				};
+				li.style.webkitTransform = 'translate3d(' + i*scale + 'px, 0, 0)';
+				this.outer.appendChild(li);
+			}
+
+			wrap.style.height = window.innerHeight + 'px';
+			wrap.appendChild(this.outer);
+		}
+
+		Slider.prototype.bindDOM = function () {
+			var self = this;
+			var scale = self.scaleW;
+			var outer = self.outer;
+			var len = self.list.length;
+
+			var startHandler = function (evt) {
+				self.startX = evt.touches[0].pageX;
+
+				self.offsetX = 0;
+
+				// 为了获得时间戳
+				self.startTime = new Date() * 1;
+			};
+
+			var moveHandler = function (evt) {
+				// 阻止浏览器原生行为
+				evt.preventDefault();
+
+				self.offsetX = evt.touches[0].pageX - self.startX;
+
+				var lis = outer.getElementsByTagName('li');
+
+				var i = self.idx - 1;
+
+				var m = i + 3;
+
+				for (i; i < m; i++) {
+					lis[i] && (lis[i].style.webkitTransform = 'translate3d(' + ((i - self.idx)*scale + self.offsetX) + 'px, 0, 0)');
+
+					// 使动画产生实时效果
+					lis[i] && (lis[i].style.webkitTransition = 'none');
+				}
+			};
+
+			var endHandler = function (evt) {
+				var boundary = scale / 6;
+
+				var endTime = new Date() * 1;
+
+				var lis = outer.getElementsByTagName('li');
+
+				if (endTime - self.startTime > 800) {
+					//慢操作
+					if (self.offsetX >= boundary) {
+						//切前页
+						self.go('-1');
+					} else if (self.offsetX < -boundary) {
+						//切后页
+						self.go('+1');
+					} else {
+						//切页
+						self.go('0');
+					};
+				} else {
+					//快操作
+					if (self.offsetX > 50) {
+						self.go('-1');
+					} else if (self.offsetX < -50) {
+						self.go('+1');
+					} else {
+						self.go('0');
+					};
+				};
+				
+			};
+
+			outer.addEventListener('touchstart', startHandler);
+			outer.addEventListener('touchmove', moveHandler);
+			outer.addEventListener('touchend', endHandler);
+		}
+
+		Slider.prototype.go = function (n) {
+			var idx = this.idx;
+			var cidx;
+			var lis = this.outer.getElementsByTagName('li');
+			var len = lis.length;
+			var scale = this.scaleW;
+
+			if (typeof n === 'number') {
+				cidx = idx;
+			} else if (typeof n === 'string') {
+				cidx = idx + n * 1;
+				console.log(cidx);
+			};
+
+			// 确定索引有效
+			if (cidx > len - 1) {
+				cidx = len - 1;
+			} else if (cidx < 0) {
+				cidx = 0;
+			};
+
+			this.idx = cidx;
+
+			lis[cidx].style.webkitTransition = '-webkit-transform 0.2s ease-out';
+			lis[cidx - 1] && (lis[cidx - 1].style.webkitTransition = '-webkit-transform 0.2s ease-out');
+			lis[cidx + 1] && (lis[cidx + 1].style.webkitTransition = '-webkit-transform 0.2s ease-out');
+
+			lis[cidx].style.webkitTransform = 'translate3d(0, 0, 0)';
+			lis[cidx - 1] && (lis[cidx - 1].style.webkitTransform = 'translate3d(-' + scale + 'px, 0, 0)');
+			lis[cidx + 1] && (lis[cidx + 1].style.webkitTransform = 'translate3d(' + scale + 'px, 0, 0)');
+		}
+
+		new Slider({
+			'dom': document.getElementById('canvas'),
+			'list': LIST
+		});
+		</script>
+	</body>
+</html>
